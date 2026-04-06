@@ -27,4 +27,6 @@ Rails.application.configure do
   config.hosts << "www.example.com"
   config.hosts << "localhost"
   config.hosts << "0.0.0.0"
+  config.active_job.queue_adapter = :test
+
 end

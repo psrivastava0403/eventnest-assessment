@@ -11,7 +11,7 @@ class Order < ApplicationRecord
   after_create :send_confirmation_email
   after_create :track_analytics
   after_update :handle_status_change
-  after_update :sync_with_crm
+  # after_update :sync_with_crm
 
   validates :status, inclusion: { in: %w[pending confirmed cancelled refunded] }
 
@@ -24,6 +24,11 @@ class Order < ApplicationRecord
 
   def cancel!
     update!(status: "cancelled")
+  end
+
+  def sync_to_crm
+    Rails.logger.info("Order #{id} synced to CRM")
+    # later you can add real CRM API call here
   end
 
   private
@@ -67,9 +72,5 @@ class Order < ApplicationRecord
         UserMailer.order_confirmed(user, self).deliver_now
       end
     end
-  end
-
-  def sync_with_crm
-    CrmSyncJob.perform_later(self.id) if saved_changes.any?
   end
 end

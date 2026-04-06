@@ -6,7 +6,9 @@ class Event < ApplicationRecord
   validates :title, presence: true
 
   scope :published, -> { where(status: "published") }
-  scope :upcoming, -> { where("starts_at > ?", Time.current) }
+  # scope :upcoming, -> { where("starts_at > ?", Time.current) }
+  scope :upcoming, -> { where("starts_at > ?", Time.current).order(:starts_at) }
+
 
   after_update :notify_attendees_if_cancelled
   after_update :update_search_index

@@ -3,7 +3,9 @@ module Api
     class OrdersController < ApplicationController
 
       def index
-        orders = Order.all.order(created_at: :desc)
+        orders = current_user.orders
+                              .recent
+                              .includes(:event, :order_items)
 
         render json: orders.map { |order|
           {
@@ -12,14 +14,16 @@ module Api
             event: order.event.title,
             status: order.status,
             total_amount: order.total_amount.to_f,
-            items_count: order.order_items.count,
+            items_count: order.order_items.size,
             created_at: order.created_at
           }
         }
       end
 
       def show
-        order = Order.find(params[:id])
+        order = current_user.orders
+                            .includes(:event, :payment, order_items: :ticket_tier)
+                            .find(params[:id])
 
         render json: {
           id: order.id,
@@ -49,43 +53,51 @@ module Api
       def create
         event = Event.find(params[:event_id])
 
-        order = Order.new(user: current_user, event: event)
-
-        items_params = params.require(:items)
-        items_params.each do |item_data|
+        # Build order items from params
+        items = params.require(:items).map do |item_data|
           tier = TicketTier.find(item_data[:ticket_tier_id])
-
-          order.order_items.build(
+          OrderItem.new(
             ticket_tier: tier,
             quantity: item_data[:quantity].to_i,
             unit_price: tier.price
           )
         end
 
-        if order.save
-          order.payment.process!
+        # Use the service object
+        order = OrderCreator.new(user: current_user, event: event, items: items).call
 
-          render json: {
-            id: order.id,
-            confirmation_number: order.confirmation_number,
-            status: order.status,
-            total_amount: order.total_amount.to_f,
-            payment_status: order.payment.status
-          }, status: :created
-        else
-          render json: { errors: order.errors.full_messages }, status: :unprocessable_entity
-        end
+        render json: {
+          id: order.id,
+          confirmation_number: order.confirmation_number,
+          status: order.status,
+          total_amount: order.total_amount.to_f,
+          payment_status: order.payment.status
+        }, status: :created
+      rescue ActiveRecord::RecordInvalid => e
+        render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
       end
 
       def cancel
-        order = Order.find(params[:id])
+        order = current_user.orders.find(params[:id])
 
-        if order.status == "confirmed" || order.status == "pending"
-          order.cancel!
+        if order.status.in?(%w[pending confirmed])
+          OrderCanceller.new(order).call
           render json: { message: "Order cancelled", status: order.status }
         else
           render json: { error: "Cannot cancel order in #{order.status} status" }, status: :unprocessable_entity
         end
+      end
+
+      def confirm
+        order = current_user.orders.find(params[:id])
+        OrderConfirmer.new(order).call
+        render json: { message: "Order confirmed", status: order.status }
+      end
+
+      def refund
+        order = current_user.orders.find(params[:id])
+        OrderRefunder.new(order).call
+        render json: { message: "Order refunded", status: order.status }
       end
     end
   end

@@ -11,6 +11,8 @@ Rails.application.routes.draw do
       resources :orders, only: [:index, :show, :create] do
         member do
           post :cancel
+          post :confirm
+          post :refund
         end
       end
     end

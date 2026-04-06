@@ -6,5 +6,6 @@ class CrmSyncJob < ApplicationJob
     return unless order
 
     Rails.logger.info("Syncing order #{order_id} to CRM")
+    order.sync_to_crm
   end
 end
