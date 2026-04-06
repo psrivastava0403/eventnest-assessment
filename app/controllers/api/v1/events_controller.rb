@@ -56,6 +56,7 @@ module Api
         render json: {
           id: event.id,
           title: event.title,
+          bookmark_count: (current_user == event.user ? event.bookmarks.count : nil),
           description: event.description,
           venue: event.venue,
           city: event.city,
