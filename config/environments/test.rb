@@ -12,4 +12,12 @@ Rails.application.configure do
 
   config.action_mailer.delivery_method = :test
   config.action_mailer.raise_delivery_errors = false
+  
+  config.hosts.clear
+  config.active_job.queue_adapter = :test
+  config.hosts << "www.example.com"
+  config.hosts << "localhost"
+  config.hosts << "0.0.0.0"
+  config.active_job.queue_adapter = :inline
+
 end

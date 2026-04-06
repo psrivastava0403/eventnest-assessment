@@ -22,4 +22,9 @@ Rails.application.configure do
 
   config.action_mailer.delivery_method = :test
   config.action_mailer.raise_delivery_errors = false
+
+  config.hosts.clear
+  config.hosts << "www.example.com"
+  config.hosts << "localhost"
+  config.hosts << "0.0.0.0"
 end

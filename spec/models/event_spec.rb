@@ -1,6 +1,9 @@
 require "rails_helper"
 
 RSpec.describe Event, type: :model do
+  before do
+    Event.delete_all
+  end
   describe "associations" do
     it { should belong_to(:user) }
     it { should have_many(:ticket_tiers) }

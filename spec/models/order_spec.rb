@@ -1,6 +1,9 @@
 require "rails_helper"
 
 RSpec.describe Order, type: :model do
+  before do
+    allow(CrmSyncJob).to receive(:perform_later)
+  end
   describe "associations" do
     it { should belong_to(:user) }
     it { should belong_to(:event) }
@@ -17,7 +20,7 @@ RSpec.describe Order, type: :model do
 
   describe "#confirm!" do
     it "sets status to confirmed" do
-      order = create(:order)
+      order = create(:order, total_amount: 100.0)
       order.confirm!
       expect(order.reload.status).to eq("confirmed")
     end
@@ -25,7 +28,7 @@ RSpec.describe Order, type: :model do
 
   describe "#cancel!" do
     it "sets status to cancelled" do
-      order = create(:order, status: "confirmed")
+      order = create(:order, status: "confirmed", total_amount: 100.0)
       order.cancel!
       expect(order.reload.status).to eq("cancelled")
     end
